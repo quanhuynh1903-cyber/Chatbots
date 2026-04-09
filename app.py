@@ -21,15 +21,11 @@ st.markdown("""
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/4712/4712035.png", width=120)
     st.markdown("### 🌟 Về Ứng Dụng")
-   st.info("**ESL AI Tutor** nay đã được nâng cấp với 'bộ tai' siêu nhạy Whisper từ OpenAI, giúp nghe hiểu cả những phát âm chưa chuẩn xác nhất!")
+    st.info("**ESL AI Tutor** nay đã được nâng cấp với 'bộ tai' siêu nhạy Whisper từ OpenAI, giúp nghe hiểu cả những phát âm chưa chuẩn xác nhất!")
     st.divider()
     if st.button("🔄 Xóa lịch sử & Bắt đầu lại", use_container_width=True, type="primary"):
         st.session_state.messages = [{"role": "assistant", "content": "Hello! I am your AI English tutor. How can I help you practice today?"}]
         st.rerun()
-
-st.markdown("<h1 class='main-title'>🎓 ESL AI TUTOR</h1>", unsafe_allow_html=True)
-st.markdown("<div class='sub-title'>Trợ lý Luyện nghe - nói Tiếng Anh Thông minh (Powered by Whisper)</div>", unsafe_allow_html=True)
-
 # --- 3. TẢI DỮ LIỆU & MODEL CHAT ---
 @st.cache_resource
 def load_data_and_model():
