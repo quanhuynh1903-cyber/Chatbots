@@ -78,7 +78,8 @@ st.markdown("<div class='sub-title'>Trợ lý Luyện Nghe & Nói Tiếng Anh Th
 # --- 4. TẢI DỮ LIỆU & MODEL ---
 @st.cache_resource
 def load_data_and_model():
-    df = pd.read_csv('10000_esl_dataset.csv')
+    # Đã sửa lại tên file mới
+    df = pd.read_csv('cleaned_esl_dataset.csv')
     model = joblib.load('esl_model.pkl')
     return df, model
 
@@ -132,7 +133,7 @@ if user_audio:
                 st.error("⚠️ Lỗi kết nối máy chủ giọng nói.")
 st.markdown("</div>", unsafe_allow_html=True)
 
-# --- 7. XỬ LÝ LÝ LOGIC AI TRẢ LỜI ---
+# --- 7. XỬ LÝ LOGIC AI TRẢ LỜI ---
 if user_message:
     # 7.1 Lưu tin nhắn người dùng
     st.session_state.messages.append({"role": "user", "content": user_message})
