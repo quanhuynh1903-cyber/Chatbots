@@ -1,8 +1,7 @@
 streamlit
 pandas
-openai-whisper
+scikit-learn
+joblib
 gTTS
-fuzzywuzzy
-python-Levenshtein
-librosa
-soundfile
+streamlit-mic-recorder
+openai
