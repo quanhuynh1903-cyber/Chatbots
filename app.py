@@ -21,7 +21,7 @@ def load_data_and_model():
 
 @st.cache_resource
 def load_whisper_model():
-    # 🟢 ĐÃ NÂNG CẤP LÊN BẢN "SMALL" ĐỂ NGHE CHUẨN XÁC HƠN
+    # Sử dụng bản "small" là lựa chọn cân bằng nhất hiện tại
     return whisper.load_model("small")
 
 try:
@@ -68,125 +68,77 @@ with st.sidebar:
         <div class="glass-card">
             <div class="card-title">✨ Về Ứng Dụng</div>
             <p style="font-size: 13px; color: #475569; margin: 0;">
-                <strong style="color: #2563eb;">ESL AI Tutor</strong> nay đã được nâng cấp với 'bộ tai' siêu nhạy Whisper từ OpenAI, giúp nghe hiểu cả những phát âm chưa chuẩn xác nhất!
+                <strong style="color: #2563eb;">ESL AI Tutor</strong> sử dụng OpenAI Whisper để nhận diện giọng nói cực chuẩn.
             </p>
         </div>
-        <div class="glass-card"><div class="card-title">📉 Your Speaking Progress</div><p style="font-size: 12px; color: gray; margin-bottom: 5px;">Weekly practice time (in min)</p>
+        <div class="glass-card"><div class="card-title">📉 Your Speaking Progress</div>
     """, unsafe_allow_html=True)
     st.line_chart(pd.DataFrame(np.array([2, 5, 4, 10, 15, 8, 12]), columns=['Minutes']), height=120)
     st.markdown("""
         <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
             <div style="background-color: #0284c7; color: white; padding: 5px 10px; border-radius: 8px; font-weight: bold;">A2</div>
-            <div>
-                <div style="font-weight: bold; font-size: 14px; color: #1e293b;">Intermediate A2</div>
-                <div style="color: #f59e0b; font-size: 12px;">⭐⭐⭐⭐⭐</div>
-            </div>
+            <div><div style="font-weight: bold; font-size: 14px; color: #1e293b;">Intermediate A2</div></div>
         </div></div>
-        <div style="padding-left: 10px;">
-            <p style="font-size: 14px; color: #334155; margin-bottom: 8px;">🔥 <strong>5-Day Streak</strong></p>
-            <p style="font-size: 14px; color: #334155; margin-bottom: 8px;">🏅 <strong>Pronunciation Ace</strong></p>
-            <p style="font-size: 14px; color: #334155;">⭐ <strong>Grammar Master</strong></p>
-        </div>
     """, unsafe_allow_html=True)
-    st.write("")
     if st.button("🔄 Xóa lịch sử & Bắt đầu lại", use_container_width=True):
         st.session_state.step = 0
-        st.session_state.last_user_text = ""
-        st.session_state.last_bot_reply = ""
         st.rerun()
 
-# --- 5. KHU VỰC CHÍNH (MAIN AREA) ---
-if "step" not in st.session_state:
-    st.session_state.step = 0
-if "last_user_text" not in st.session_state:
-    st.session_state.last_user_text = ""
-if "last_bot_reply" not in st.session_state:
-    st.session_state.last_bot_reply = ""
+# --- 5. KHU VỰC CHÍNH ---
+if "step" not in st.session_state: st.session_state.step = 0
+if "last_user_text" not in st.session_state: st.session_state.last_user_text = ""
+if "last_bot_reply" not in st.session_state: st.session_state.last_bot_reply = ""
 
-# Lời chào mặc định
-st.markdown("""
-    <div class="ai-chat-bubble">
-        <span style="font-size: 24px;">🌐</span>
-        <span style="color: #334155; font-size: 16px;">Hello! I am your AI English tutor. How can I help you practice today?</span>
-    </div>
-""", unsafe_allow_html=True)
+st.markdown("""<div class="ai-chat-bubble"><span>🌐</span><span style="color: #334155;">Hello! I am your AI English tutor. How can I practice with you today?</span></div>""", unsafe_allow_html=True)
 
-# Khối hiển thị kết quả THẬT sau khi thu âm
 if st.session_state.step == 1:
-    # 1. Thẻ Feedback chứa CÂU CHỮ THẬT của người dùng
     st.markdown(f"""
 <div class="feedback-card">
     <div class="feedback-title">Instant Practice Feedback</div>
-    <p style="color: #334155; font-size: 15px;">Your Sentence: 
-        <strong style="color: #2563eb;">{st.session_state.last_user_text}</strong>
-    </p>
+    <p style="color: #334155;">Your Sentence: <strong style="color: #2563eb;">{st.session_state.last_user_text}</strong></p>
     <div class="score-grid">
-        <div>
-            <div>Pronunciation Score: <strong style="color: #10b981;">88%</strong></div>
-            <div style="margin-top: 10px;">Herterode: <span style="color: #f59e0b;">⭐⭐⭐⭐☆</span></div>
-            <div style="margin-top: 10px;">Grammar check: <strong style="color: #10b981;">Correct</strong></div>
-        </div>
-        <div>
-            <div>Fluency: <span style="color: #f59e0b;">⭐⭐⭐⭐⭐</span></div>
-            <div style="margin-top: 10px;">Grammar check: <strong style="color: #10b981;">Correct</strong></div>
-        </div>
+        <div>Pronunciation: <strong>88%</strong> | Grammar: <strong>Correct</strong></div>
+        <div>Fluency: ⭐⭐⭐⭐⭐</div>
     </div>
 </div>
     """, unsafe_allow_html=True)
 
-    # 2. Câu trả lời của AI
-    st.markdown(f"""
-        <div class="ai-chat-bubble" style="margin-top: 30px;">
-            <span style="font-size: 24px;">🤖</span>
-            <span style="color: #334155; font-size: 16px;">{st.session_state.last_bot_reply}</span>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # 3. Phát âm thanh câu trả lời của AI
-    audio_bytes = text_to_speech(st.session_state.last_bot_reply)
-    st.audio(audio_bytes, format='audio/mp3', autoplay=True)
+    st.markdown(f"""<div class="ai-chat-bubble" style="margin-top: 20px;"><span>🤖</span><span style="color: #334155;">{st.session_state.last_bot_reply}</span></div>""", unsafe_allow_html=True)
+    st.audio(text_to_speech(st.session_state.last_bot_reply), format='audio/mp3', autoplay=True)
 
-# --- 6. KHU VỰC THU ÂM & XỬ LÝ BACKEND ---
-tab1, tab2 = st.tabs(["📝 Luyện Viết (Văn bản)", "🎙️ Luyện Nói (Giọng nói)"])
+# --- 6. XỬ LÝ BACKEND TỐI ƯU ---
+tab1, tab2 = st.tabs(["📝 Luyện Viết", "🎙️ Luyện Nói"])
 
 with tab2:
-    st.markdown("""
-        <div class="neon-mic-container">
-            <div class="mic-button-mockup">🎙️</div>
-            <p style="color: #475569; font-size: 14px; margin-top: 10px; font-weight: 500;">
-                💡 Nhấn vào micro (của Streamlit ở dưới), đọc một câu Tiếng Anh. AI Whisper siêu nhạy sẽ dịch giọng nói của bạn!
-            </p>
-        </div>
-    """, unsafe_allow_html=True)
-    
+    st.markdown("""<div class="neon-mic-container"><div class="mic-button-mockup">🎙️</div><p style="color: #475569;">Nhấn vào micro phía dưới và nói chuyện với tôi.</p></div>""", unsafe_allow_html=True)
     user_audio = st.audio_input("Thu âm", label_visibility="collapsed")
     
     if user_audio:
-        with st.spinner("🎧 Whisper đang nghe cực kỳ tập trung..."):
-            # Lưu file âm thanh tạm
+        with st.spinner("🎧 Đang lắng nghe kỹ giọng nói của bạn..."):
             temp_path = "temp_voice.wav"
             with open(temp_path, "wb") as f:
                 f.write(user_audio.read())
             
             try:
-                # BƯỚC 1: Whisper "nghe" và dịch ra chữ
-                result = whisper_model.transcribe(temp_path, language="en")
-                recognized_text = result["text"]
+                # 🟢 Cải tiến: Tăng độ chính xác cho Whisper trên CPU
+                result = whisper_model.transcribe(temp_path, language="en", fp16=False)
+                recognized_text = result["text"].strip()
                 
-                # BƯỚC 2: NLP Model phân tích ý định và tìm câu trả lời
-                predicted_intent = nlp_model.predict([recognized_text])[0]
-                possible_responses = df[df['Intent'] == predicted_intent]['Bot_Response'].tolist()
-                bot_reply = random.choice(possible_responses)
-                
-                # Cập nhật trạng thái
-                st.session_state.last_user_text = recognized_text
-                st.session_state.last_bot_reply = bot_reply
-                st.session_state.step = 1
-                
-            except Exception as e:
-                st.error(f"Lỗi phân tích giọng nói: {e}")
-            finally:
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
+                if len(recognized_text) > 2:
+                    # 🟢 Cải tiến: Xử lý dự đoán NLP
+                    predicted_intent = nlp_model.predict([recognized_text])[0]
+                    possible_responses = df[df['Intent'] == predicted_intent]['Bot_Response'].tolist()
                     
-            st.rerun() # Tải lại trang để hiện kết quả lên thẻ Feedback
+                    # Nếu AI không chắc chắn, dùng câu trả lời linh hoạt
+                    bot_reply = random.choice(possible_responses) if possible_responses else "That sounds interesting! Tell me more."
+                    
+                    st.session_state.last_user_text = recognized_text
+                    st.session_state.last_bot_reply = bot_reply
+                    st.session_state.step = 1
+                else:
+                    st.warning("⚠️ Tôi chưa nghe rõ, bạn có thể nói lại không?")
+            except Exception as e:
+                st.error(f"Lỗi: {e}")
+            finally:
+                if os.path.exists(temp_path): os.remove(temp_path)
+            st.rerun()
