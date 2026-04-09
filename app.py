@@ -202,27 +202,24 @@ st.markdown("""
 # Hiển thị Thẻ Feedback sau khi thu âm
 if st.session_state.step == 1:
     st.markdown("""
-        <div class="feedback-card">
-            <div class="feedback-title">Instant Practice Feedback</div>
-            <p style="color: #334155; font-size: 15px;">Your Sentence: 
-                Can you <span class="word-bad">recommend</span> a <span class="word-good">good restaurant</span>?
-            </p>
-            
-            <div class="score-grid">
-                <div>
-                    <div>Pronunciation Score: <strong style="color: #10b981;">88%</strong></div>
-                    <div style="margin-top: 10px;">Herterode: <span style="color: #f59e0b;">⭐⭐⭐⭐☆</span></div>
-                    <div style="margin-top: 10px;">Grammar check: <strong style="color: #10b981;">Correct</strong></div>
-                </div>
-                <div>
-                    <div>Fluency: <span style="color: #f59e0b;">⭐⭐⭐⭐⭐</span></div>
-                    <div style="margin-top: 10px;">Grammar check: <strong style="color: #10b981;">Correct</strong></div>
-                </div>
-            </div>
+<div class="feedback-card">
+    <div class="feedback-title">Instant Practice Feedback</div>
+    <p style="color: #334155; font-size: 15px;">Your Sentence: 
+        Can you <span class="word-bad">recommend</span> a <span class="word-good">good restaurant</span>?
+    </p>
+    <div class="score-grid">
+        <div>
+            <div>Pronunciation Score: <strong style="color: #10b981;">88%</strong></div>
+            <div style="margin-top: 10px;">Herterode: <span style="color: #f59e0b;">⭐⭐⭐⭐☆</span></div>
+            <div style="margin-top: 10px;">Grammar check: <strong style="color: #10b981;">Correct</strong></div>
         </div>
+        <div>
+            <div>Fluency: <span style="color: #f59e0b;">⭐⭐⭐⭐⭐</span></div>
+            <div style="margin-top: 10px;">Grammar check: <strong style="color: #10b981;">Correct</strong></div>
+        </div>
+    </div>
+</div>
     """, unsafe_allow_html=True)
-
-st.write("<br><br>", unsafe_allow_html=True)
 
 # --- 5. KHU VỰC THU ÂM (Mô phỏng Neon Wave) ---
 tab1, tab2 = st.tabs(["📝 Luyện Viết (Văn bản)", "🎙️ Luyện Nói (Giọng nói)"])
