@@ -1,121 +1,60 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import time
-import io
-import base64
 from gtts import gTTS
-from fuzzywuzzy import fuzz
-import speech_recognition as sr
+import io
+from streamlit_mic_recorder import mic_recorder
 
-# --- 1. CẤU HÌNH GIAO DIỆN ---
-st.set_page_config(page_title="AI Speaking Partner", page_icon="💬", layout="wide")
+# --- CẤU HÌNH TRANG ---
+st.set_page_config(page_title="ESL AI Chatbot", layout="wide")
 
-st.markdown("""
-<style>
-    .stApp { background-color: #f0f2f5; }
-    .user-msg {
-        background-color: #0084ff; color: white; padding: 15px;
-        border-radius: 18px 18px 2px 18px; margin: 10px 0;
-        float: right; clear: both; max-width: 75%;
-    }
-    .ai-msg {
-        background-color: white; color: #1c1e21; padding: 15px;
-        border-radius: 18px 18px 18px 2px; margin: 10px 0;
-        float: left; clear: both; max-width: 75%;
-        border: 1px solid #ddd;
-    }
-    .feedback-panel {
-        background: #ffffff; padding: 20px; border-radius: 15px;
-        border-left: 6px solid #4f46e5; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-</style>
-""", unsafe_allow_html=True)
+# --- LOAD DỮ LIỆU & MODEL ---
+@st.cache_resource
+def load_assets():
+    model = joblib.load('esl_model.pkl')
+    df = pd.read_csv('10000_esl_dataset.csv')
+    return model, df
 
-# --- 2. HÀM HỖ TRỢ ---
-def speak(text):
-    tts = gTTS(text=text, lang='en')
-    fp = io.BytesIO()
-    tts.write_to_fp(fp)
-    b64 = base64.b64encode(fp.getvalue()).decode()
-    return f'<audio autoplay><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>'
+model, df = load_assets()
 
-# --- 3. QUẢN LÝ SESSION STATE ---
-if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "ai", "content": "Hi! I'm your AI Speaking Partner. Ready to practice?"}]
-if "last_feedback" not in st.session_state:
-    st.session_state.last_feedback = None
+# --- GIAO DIỆN CHÍNH ---
+st.title("🎙️ Improving ESL Speaking Skills using AI")
+st.markdown("---")
 
-# --- 4. GIAO DIỆN CHÍNH ---
-st.title("💬 Real-time Speaking Conversation")
-
-col_chat, col_feedback = st.columns([2, 1])
-
-with col_chat:
-    st.subheader("Chat")
-    chat_container = st.container(height=400)
-    with chat_container:
-        for msg in st.session_state.messages:
-            div_class = "ai-msg" if msg["role"] == "ai" else "user-msg"
-            st.markdown(f'<div class="{div_class}">{msg["content"]}</div>', unsafe_allow_html=True)
-
-    st.write("---")
-    voice_input = st.audio_input("Bấm micro để nói")
-
-    if voice_input:
-        with st.spinner("AI đang lắng nghe..."):
-            r = sr.Recognizer()
-            try:
-                with sr.AudioFile(voice_input) as source:
-                    audio_data = r.record(source)
-                    user_text = r.recognize_google(audio_data, language="en-US")
-                    
-                    # Cập nhật hội thoại
-                    st.session_state.messages.append({"role": "user", "content": user_text})
-                    
-                    # Logic phản hồi (Demo)
-                    ai_reply = "That's interesting! Can you tell me more?"
-                    if "hello" in user_text.lower(): ai_reply = "Hello there! How are you today?"
-                    
-                    st.session_state.messages.append({"role": "ai", "content": ai_reply})
-                    
-                    # Phân tích Feedback
-                    score = min(100, len(user_text) * 5 + 40)
-                    st.session_state.last_feedback = {
-                        "text": user_text,
-                        "score": score,
-                        "suggestion": "Good flow. Try adding more details to your answer."
-                    }
-                    st.rerun()
-            except:
-                st.error("Xin lỗi, tôi không nghe rõ. Thử lại nhé!")
-
-# --- 5. PHẦN FEEDBACK (ĐÃ FIX LỖI SYNTAX) ---
-with col_feedback:
-    st.subheader("Practice Feedback")
-    
-    # FIX: Tách việc gán và kiểm tra điều kiện
-    fb = st.session_state.last_feedback 
-    
-    if fb is not None:
-        st.markdown(f"""
-        <div class="feedback-panel">
-            <p style="color: #666; font-size: 0.8em; margin-bottom: 5px;">PHÂN TÍCH CÂU VỪA NÓI</p>
-            <h2 style="margin: 0; color: #4f46e5;">{fb['score']}%</h2>
-            <p style="font-weight: bold; margin-top: 10px;">Câu của bạn:</p>
-            <p style="font-style: italic; color: #444;">"{fb['text']}"</p>
-            <hr>
-            <p><b>Lời khuyên:</b><br>{fb['suggestion']}</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Phát giọng nói cho câu trả lời mới nhất của AI
-        last_ai_msg = st.session_state.messages[-1]["content"]
-        st.markdown(speak(last_ai_msg), unsafe_allow_html=True)
-    else:
-        st.info("Hãy nói gì đó để bắt đầu cuộc đối thoại!")
-
+# Sidebar cho cấu hình
 with st.sidebar:
-    if st.button("Reset Conversation"):
-        st.session_state.clear()
-        st.rerun()
+    st.header("Settings")
+    mode = st.selectbox("Choose Mode", ["Role-play", "Topic Discussion", "Debate"])
+    speed = st.slider("Voice Speed", 0.5, 2.0, 1.0)
+    st.info("Model hiện tại hỗ trợ: Airport, Directions, Job Interview, v.v.")
+
+# --- XỬ LÝ GHI ÂM (STT) ---
+st.subheader("Start Speaking:")
+audio = mic_recorder(start_prompt="Click to Speak 🎤", stop_prompt="Stop Recording 🛑", key='recorder')
+
+if audio:
+    # Ở đây bạn sẽ gửi audio.bytes đến Whisper API của OpenAI
+    # Giả sử chúng ta có text sau khi chuyển đổi:
+    user_text = "I want to practice airport custom" # Demo text
+    st.success(f"You said: {user_text}")
+
+    # Dự đoán Intent bằng model .pkl của bạn
+    prediction = model.predict([user_text])[0]
+    st.write(f"Detected Intent: **{prediction}**")
+
+    # Lấy phản hồi từ dataset hoặc LLM
+    response = df[df['Intent'] == prediction]['Bot_Response'].values[0]
+    st.chat_message("assistant").write(response)
+
+    # --- TEXT TO SPEECH (TTS) ---
+    tts = gTTS(text=response, lang='en')
+    audio_fp = io.BytesIO()
+    tts.write_to_fp(audio_fp)
+    st.audio(audio_fp, format='audio/mp3')
+
+# --- HỆ THỐNG ĐÁNH GIÁ (ANALYTICS) ---
+st.markdown("---")
+col1, col2, col3 = st.columns(3)
+col1.metric("Fluency", "85%", "+2%")
+col2.metric("Grammar Accuracy", "90%", "+5%")
+col3.metric("Daily Streak", "5 Days", "🔥")
