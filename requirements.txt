@@ -4,3 +4,5 @@ scikit-learn
 joblib
 gTTS
 SpeechRecognition
+fuzzywuzzy
+python-Levenshtein
