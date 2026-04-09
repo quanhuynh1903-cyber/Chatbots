@@ -4,6 +4,7 @@ import joblib
 import random
 from gtts import gTTS
 import io
+import speech_recognition as sr
 
 # --- 1. Cấu hình giao diện trang web ---
 st.set_page_config(page_title="ESL AI Tutor", page_icon="🎓", layout="centered")
@@ -12,18 +13,20 @@ with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/4712/4712035.png", width=100)
     st.title("Về Ứng Dụng")
     st.markdown("""
-    **ESL AI Tutor** đã được nâng cấp tính năng Phát âm thanh (Text-to-Speech).
+    **ESL AI Tutor** là chatbot hỗ trợ luyện nói tiếng Anh toàn diện.
     
-    **💡 Mẹo luyện Speaking:**
-    Thay vì gõ phím, hãy sử dụng tính năng nhập bằng giọng nói (Voice Typing) của bàn phím để luyện phát âm!
+    **Tính năng nổi bật:**
+    - 🎤 Ghi âm giọng nói trực tiếp
+    - 🎧 AI phản hồi bằng âm thanh (Text-to-Speech)
+    - 📝 Tự động nhận diện lỗi sai
     """)
     st.divider()
     if st.button("Xóa lịch sử trò chuyện"):
-        st.session_state.messages = []
+        st.session_state.messages = [{"role": "assistant", "content": "Hello! I am your AI English tutor. How can I help you practice today?"}]
         st.rerun()
 
 st.title("🎓 Trợ Lý Luyện Nói Tiếng Anh AI")
-st.caption("Sử dụng Voice Typing trên bàn phím để nói chuyện với Bot nhé!")
+st.caption("Bạn có thể gõ phím HOẶC bấm vào biểu tượng Micro bên dưới để nói chuyện trực tiếp nhé!")
 
 # --- 2. Tải Dữ liệu & Mô hình ---
 @st.cache_resource
@@ -38,17 +41,15 @@ except Exception as e:
     st.error("Lỗi tải dữ liệu. Vui lòng kiểm tra lại file .pkl và .csv")
     st.stop()
 
-# --- 3. Hàm tạo giọng nói cho Bot ---
+# --- 3. Hàm tạo giọng nói cho Bot (Text-to-Speech) ---
 def text_to_speech(text):
-    # Tạo âm thanh từ văn bản, ngôn ngữ tiếng Anh ('en')
     tts = gTTS(text=text, lang='en', slow=False)
-    # Lưu vào bộ nhớ tạm thay vì lưu thành file cứng trong máy
     audio_data = io.BytesIO()
     tts.write_to_fp(audio_data)
     audio_data.seek(0)
     return audio_data
 
-# --- 4. Xử lý Logic Trò chuyện ---
+# --- 4. Logic Hội thoại ---
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "Hello! I am your AI English tutor. How can I help you practice today?"}]
 
@@ -57,25 +58,57 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Nhận tin nhắn mới từ người dùng
-if user_input := st.chat_input("Type or Speak your message here..."):
-    # Hiện tin nhắn User
-    with st.chat_message("user"):
-        st.markdown(user_input)
-    st.session_state.messages.append({"role": "user", "content": user_input})
+# --- 5. Khu vực Nhập liệu (Gõ phím HOẶC Ghi âm) ---
+user_message = None
 
-    # AI Phản hồi
+# Giao diện cho phép chọn 1 trong 2 cách nhập
+col1, col2 = st.columns([1, 1])
+with col1:
+    user_text = st.chat_input("Gõ tin nhắn của bạn...")
+with col2:
+    # Nút ghi âm trực tiếp của Streamlit
+    user_audio = st.audio_input("🎙️ Nhấn để thu âm")
+
+# Xử lý nếu người dùng gõ phím
+if user_text:
+    user_message = user_text
+
+# Xử lý nếu người dùng gửi file ghi âm
+elif user_audio:
+    with st.spinner("Đang nghe giọng của bạn..."):
+        r = sr.Recognizer()
+        # Đọc file âm thanh người dùng vừa ghi
+        with sr.AudioFile(user_audio) as source:
+            audio_data = r.record(source)
+            try:
+                # Nhờ Google dịch giọng nói thành chữ (Tiếng Anh)
+                recognized_text = r.recognize_google(audio_data, language="en-US")
+                user_message = recognized_text
+            except sr.UnknownValueError:
+                st.warning("Xin lỗi, tôi nghe không rõ. Bạn có thể nói lại hoặc gõ phím được không?")
+            except sr.RequestError:
+                st.error("Lỗi dịch vụ nhận diện giọng nói. Vui lòng kiểm tra kết nối mạng.")
+
+# --- 6. AI Phản hồi ---
+if user_message:
+    # 6.1 Hiển thị tin nhắn User
+    with st.chat_message("user"):
+        st.markdown(f"*{user_message}*") # In nghiêng để nhận biết
+    st.session_state.messages.append({"role": "user", "content": f"*{user_message}*"})
+
+    # 6.2 AI Xử lý và Trả lời
     with st.chat_message("assistant"):
-        # Dự đoán ý định
-        predicted_intent = model.predict([user_input])[0]
+        # Phân tích ý định
+        predicted_intent = model.predict([user_message])[0]
         possible_responses = df[df['Intent'] == predicted_intent]['Bot_Response'].tolist()
         bot_reply = random.choice(possible_responses)
         
         # In chữ ra màn hình
         st.markdown(bot_reply)
         
-        # 🟢 TẠO VÀ PHÁT ÂM THANH NGAY BÊN DƯỚI CÂU TRẢ LỜI 🟢
+        # Phát âm thanh phản hồi
         audio_bytes = text_to_speech(bot_reply)
         st.audio(audio_bytes, format='audio/mp3', autoplay=True)
     
+    # Lưu vào lịch sử
     st.session_state.messages.append({"role": "assistant", "content": bot_reply})
