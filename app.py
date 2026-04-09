@@ -7,6 +7,7 @@ from gtts import gTTS
 import io
 from fuzzywuzzy import fuzz
 import time
+import base64
 
 # --- 1. CẤU HÌNH GIAO DIỆN RỘNG ---
 st.set_page_config(page_title="ESL AI Tutor", page_icon="🤖", layout="wide")
@@ -57,7 +58,7 @@ with st.sidebar:
 
 # --- 5. KHU VỰC CHÍNH ---
 if "step" not in st.session_state: st.session_state.step = 0
-if "audio_key" not in st.session_state: st.session_state.audio_key = ""
+if "last_processed_id" not in st.session_state: st.session_state.last_processed_id = ""
 
 st.markdown('<div class="main-card">🌐 <b>AI Tutor:</b> Hello! I am your AI English tutor. How can I practice with you today?</div>', unsafe_allow_html=True)
 
@@ -66,7 +67,8 @@ if st.session_state.step == 1:
     bot_txt = st.session_state.bot_reply
     
     # Tính điểm
-    sample_targets = df[df['Intent'] == nlp_model.predict([user_txt])[0]]['User_Input'].tolist()
+    intent_pred = nlp_model.predict([user_txt])[0]
+    sample_targets = df[df['Intent'] == intent_pred]['User_Input'].tolist()
     target = sample_targets[0] if sample_targets else user_txt
     score = fuzz.ratio(user_txt.lower(), target.lower())
 
@@ -86,17 +88,21 @@ if st.session_state.step == 1:
     st.markdown(f'<div class="main-card" style="margin-top: 20px;">🤖 <b>AI:</b> {bot_txt}</div>', unsafe_allow_html=True)
 
     # --- 🟢 GIẢI PHÁP CHỐNG LẶP TIẾNG TRIỆT ĐỂ ---
-    # Tạo mã định danh duy nhất cho câu trả lời này
-    current_audio_id = f"audio_{hash(bot_txt)}"
-    
-    # Nếu mã định danh này khác với mã đã phát trước đó, thì cho phép autoplay
-    if st.session_state.audio_key != current_audio_id:
+    # Tạo một ID duy nhất dựa trên nội dung và thời gian để tránh trùng lặp khi rerun
+    current_msg_id = f"{hash(bot_txt)}_{st.session_state.get('response_time', 0)}"
+
+    if st.session_state.last_processed_id != current_msg_id:
+        # Phát âm thanh tự động (chỉ chạy khi ID mới)
         audio_fp = text_to_speech(bot_txt)
-        st.audio(audio_fp, format="audio/mp3", autoplay=True)
-        # Lưu lại mã định danh đã phát
-        st.session_state.audio_key = current_audio_id
+        audio_bytes = audio_fp.read()
+        audio_base64 = base64.b64encode(audio_bytes).decode()
+        audio_tag = f'<audio autoplay="true"><source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3"></audio>'
+        st.markdown(audio_tag, unsafe_allow_html=True)
+        
+        # Đánh dấu ID này đã được phát
+        st.session_state.last_processed_id = current_msg_id
     else:
-        # Nếu trang web chỉ load lại (rerun), hiện thanh audio nhưng KHÔNG tự chạy
+        # Nếu chỉ là rerun bình thường, hiện thanh audio tĩnh để nghe lại nếu muốn
         audio_fp = text_to_speech(bot_txt)
         st.audio(audio_fp, format="audio/mp3", autoplay=False)
 
@@ -122,8 +128,7 @@ with tab2:
                         st.session_state.user_text = text
                         st.session_state.bot_reply = random.choice(replies) if replies else "Interesting!"
                         st.session_state.step = 1
-                        # Reset audio_key để câu mới được phát
-                        st.session_state.audio_key = "" 
+                        st.session_state.response_time = time.time() # Lưu thời điểm phản hồi
                         st.rerun()
             except Exception as e:
                 st.error("❌ AI không nghe rõ, hãy thử lại!")
@@ -136,5 +141,5 @@ with tab1:
         st.session_state.user_text = user_input
         st.session_state.bot_reply = random.choice(replies) if replies else "Interesting!"
         st.session_state.step = 1
-        st.session_state.audio_key = "" 
+        st.session_state.response_time = time.time() # Lưu thời điểm phản hồi
         st.rerun()
