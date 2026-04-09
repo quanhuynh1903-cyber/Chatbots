@@ -95,24 +95,38 @@ with tab2:
     st.markdown("<p style='text-align: center; color: #6366f1;'>Nhấn micro và bắt đầu nói</p>", unsafe_allow_html=True)
     audio_val = st.audio_input("Ghi âm", label_visibility="collapsed")
     
-    if audio_val and nlp_model is not None:
+    if audio_val:
         with st.spinner("AI đang phân tích..."):
-            # Sử dụng thư viện SpeechRecognition để dịch (nhẹ hơn Whisper cho Streamlit Cloud)
             import speech_recognition as sr
             r = sr.Recognizer()
-            with sr.AudioFile(audio_val) as source:
-                audio_data = r.record(source)
-                try:
-                    text = r.recognize_google(audio_data, language="en-US")
-                    intent = nlp_model.predict([text])[0]
-                    replies = df[df['Intent'] == intent]['Bot_Response'].tolist()
+            
+            # Cấu hình để AI lọc nhiễu tốt hơn
+            r.energy_threshold = 300 
+            r.pause_threshold = 0.8
+            
+            try:
+                with sr.AudioFile(audio_val) as source:
+                    # Lọc nhiễu môi trường trước khi nghe
+                    r.adjust_for_ambient_noise(source, duration=0.5)
+                    audio_data = r.record(source)
                     
-                    st.session_state.user_text = text
-                    st.session_state.bot_reply = random.choice(replies) if replies else "Interesting! Tell me more."
-                    st.session_state.step = 1
-                    st.rerun()
-                except:
-                    st.error("AI không nghe rõ, hãy thử lại!")
+                    # Dịch giọng nói
+                    text = r.recognize_google(audio_data, language="en-US")
+                    
+                    if text:
+                        intent = nlp_model.predict([text])[0]
+                        replies = df[df['Intent'] == intent]['Bot_Response'].tolist()
+                        
+                        st.session_state.user_text = text
+                        st.session_state.bot_reply = random.choice(replies) if replies else "Interesting!"
+                        st.session_state.step = 1
+                        st.rerun()
+            except sr.UnknownValueError:
+                st.error("❌ AI không nghe rõ chữ nào cả. Bạn hãy nói to và rõ hơn nhé!")
+            except sr.RequestError:
+                st.error("❌ Lỗi kết nối đến máy chủ nhận diện. Hãy kiểm tra internet!")
+            except Exception as e:
+                st.error(f"❌ Có lỗi xảy ra: {e}")
 
 with tab1:
     user_input = st.chat_input("Gõ tiếng Anh tại đây...")
