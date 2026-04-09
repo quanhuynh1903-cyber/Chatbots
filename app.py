@@ -69,14 +69,19 @@ st.markdown('<div class="main-card">🌐 <b>AI Tutor:</b> Hello! I am your AI En
 if st.session_state.step == 1:
     user_txt = st.session_state.user_text
     bot_txt = st.session_state.bot_reply
-    score = fuzz.ratio(user_txt.lower(), "i want to practice speaking") # Ví dụ so sánh mẫu
     
+    # Tính điểm thật dựa trên fuzzywuzzy (so sánh với dữ liệu chuẩn)
+    # Tìm câu User_Input chuẩn nhất trong Intent đó để so sánh
+    sample_targets = df[df['Intent'] == nlp_model.predict([user_txt])[0]]['User_Input'].tolist()
+    target = sample_targets[0] if sample_targets else user_txt
+    score = fuzz.ratio(user_txt.lower(), target.lower())
+
     st.markdown(f"""
     <div class="feedback-card">
         <h3 style="color: white; margin-top: 0;">⚡ Instant Practice Feedback</h3>
         <p>Your Sentence: <span style="font-size: 1.2rem;">"{user_txt}"</span></p>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
-            <div>🎯 Pronunciation: <b>{score if score > 50 else 85}%</b></div>
+            <div>🎯 Pronunciation: <b>{score}%</b></div>
             <div>🗣️ Fluency: ⭐⭐⭐⭐⭐</div>
             <div>📝 Grammar: <span style="color: #4ade80;">Correct</span></div>
             <div>🔍 Tip: Keep it up!</div>
@@ -85,8 +90,18 @@ if st.session_state.step == 1:
     """, unsafe_allow_html=True)
     
     st.markdown(f'<div class="main-card" style="margin-top: 20px;">🤖 <b>AI:</b> {bot_txt}</div>', unsafe_allow_html=True)
-    st.audio(text_to_speech(bot_txt), format="audio/mp3", autoplay=True)
 
+    # --- 🟢 KHỐI XỬ LÝ ÂM THANH KHÔNG LẶP LẠI ---
+    # Chỉ phát âm thanh nếu đây là lượt phản hồi mới
+    if "last_played_text" not in st.session_state or st.session_state.last_played_text != bot_txt:
+        audio_fp = text_to_speech(bot_txt)
+        st.audio(audio_fp, format="audio/mp3", autoplay=True)
+        # Đánh dấu đã phát xong câu này
+        st.session_state.last_played_text = bot_txt
+    else:
+        # Nếu đã phát rồi, vẫn hiện thanh audio nhưng không tự động chạy nữa
+        audio_fp = text_to_speech(bot_txt)
+        st.audio(audio_fp, format="audio/mp3", autoplay=False)
 # --- 6. NHẬN DIỆN GIỌNG NÓI ---
 st.write("---")
 tab1, tab2 = st.tabs(["⌨️ Text", "🎙️ Voice"])
