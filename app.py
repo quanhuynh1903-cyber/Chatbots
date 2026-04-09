@@ -8,77 +8,117 @@ import speech_recognition as sr
 
 # --- 1. CẤU HÌNH TRANG WEB ---
 st.set_page_config(
-    page_title="ESL AI Tutor", 
-    page_icon="🎓", 
+    page_title="Premium ESL Tutor", 
+    page_icon="✨", 
     layout="centered",
     initial_sidebar_state="expanded"
 )
 
-# --- THÊM CSS TÙY CHỈNH CHO GIAO DIỆN HIỆN ĐẠI ---
+# --- 2. CSS TÙY CHỈNH (GIAO DIỆN SANG TRỌNG) ---
 st.markdown("""
     <style>
-        /* Tiêu đề chính với hiệu ứng Gradient */
-        .main-title {
+        /* Import Font chữ hiện đại, sang trọng */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap');
+        
+        html, body, [class*="css"] {
+            font-family: 'Outfit', sans-serif !important;
+        }
+
+        /* Nền trang web: Hiệu ứng Gradient thanh lịch */
+        .stApp {
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+        }
+
+        /* Tiêu đề chính */
+        .premium-title {
             text-align: center;
-            background: -webkit-linear-gradient(45deg, #00C9FF 0%, #92FE9D 100%);
+            background: linear-gradient(to right, #bda376, #dfc28d, #bda376); /* Màu Vàng Gold sang trọng */
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-family: 'Nunito', 'Segoe UI', sans-serif;
-            font-weight: 900;
-            font-size: 3.2rem;
-            margin-bottom: -10px;
+            font-weight: 800;
+            font-size: 3.5rem;
+            margin-bottom: 0px;
+            letter-spacing: -1px;
+            padding-top: 20px;
         }
+
         /* Phụ đề */
-        .sub-title {
+        .premium-subtitle {
             text-align: center;
-            color: #6c757d;
+            color: #64748b;
             font-size: 1.1rem;
-            font-weight: 500;
-            margin-bottom: 30px;
-            letter-spacing: 0.5px;
+            font-weight: 400;
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
-        /* Làm đẹp phần thu âm */
-        .record-section {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 15px;
-            border: 1px solid #e9ecef;
-            margin-top: 10px;
+
+        /* Khu vực Chat (Glassmorphism) */
+        .stChatMessage {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        /* Khu vực thu âm */
+        .record-box {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 24px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        /* Tùy chỉnh Sidebar */
+        [data-testid="stSidebar"] {
+            background-color: rgba(15, 23, 42, 0.98) !important; /* Xanh đen sang trọng */
+            color: #f8fafc;
+        }
+        [data-testid="stSidebar"] * {
+            color: #f8fafc !important;
+        }
+        
+        /* Chỉnh lại viền của Audio Input */
+        div[data-testid="stAudioInput"] {
+            border-radius: 50px;
+            overflow: hidden;
+            border: 2px solid #dfc28d;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 2. THANH SIDEBAR (Menu bên trái) ---
+# --- 3. THANH SIDEBAR ---
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/4712/4712035.png", width=150, use_container_width=True)
-    st.markdown("<h2 style='text-align: center; color: #2E86C1;'>ESL AI Tutor</h2>", unsafe_allow_html=True)
+    # Có thể đổi link ảnh này thành Logo của bạn
+    st.image("https://cdn-icons-png.flaticon.com/512/2083/2083204.png", width=120)
+    st.markdown("<h2 style='color: #dfc28d !important;'>ESL ELITE</h2>", unsafe_allow_html=True)
+    st.markdown("---")
     
-    st.markdown("### 🌟 Về Ứng Dụng")
-    st.info("Trợ lý ảo giúp bạn tự tin giao tiếp Tiếng Anh. Hãy bật micro lên và bắt đầu trò chuyện ngay!")
+    st.markdown("### ✨ Về Ứng Dụng")
+    st.write("Trợ lý luyện giọng chuẩn bản xứ với công nghệ AI phân tích thời gian thực.")
     
-    st.markdown("### 💡 Mẹo Luyện Nói")
-    st.success("""
-    - **Nghe kỹ:** Lắng nghe phát âm của AI.
-    - **Nói to, rõ:** Giúp hệ thống nhận diện tốt hơn.
-    - **Đừng sợ sai:** AI luôn ở đây để giúp bạn!
-    """)
+    st.markdown("### 🎯 Mục Tiêu")
+    st.write("✔ Luyện phản xạ nhanh \n\n✔ Chuẩn hóa phát âm \n\n✔ Mở rộng từ vựng")
     
-    st.divider()
+    st.markdown("<br><br>", unsafe_allow_html=True)
     
-    # Nút làm mới giao diện 
-    if st.button("🔄 Bắt đầu cuộc hội thoại mới", use_container_width=True, type="primary"):
-        st.session_state.messages = [{"role": "assistant", "content": "Hello there! I'm your AI English tutor. I'm ready to listen, what would you like to talk about?"}]
-        st.toast('Đã làm mới cuộc trò chuyện!', icon='✨')
+    if st.button("🔄 Bắt đầu phiên mới", use_container_width=True):
+        st.session_state.messages = [{"role": "assistant", "content": "Welcome to your premium English session. How can I assist your learning today?"}]
         st.rerun()
 
-# --- 3. GIAO DIỆN CHÍNH (Header) ---
-st.markdown("<h1 class='main-title'>ESL AI TUTOR</h1>", unsafe_allow_html=True)
-st.markdown("<div class='sub-title'>Trợ lý Luyện Nghe & Nói Tiếng Anh Thông Minh 🎙️</div>", unsafe_allow_html=True)
+# --- 4. GIAO DIỆN CHÍNH (HEADER) ---
+st.markdown("<h1 class='premium-title'>ESL AI TUTOR</h1>", unsafe_allow_html=True)
+st.markdown("<div class='premium-subtitle'>Exclusive Speaking Partner</div>", unsafe_allow_html=True)
 
-# --- 4. TẢI DỮ LIỆU & MODEL ---
+# --- 5. TẢI DỮ LIỆU & MODEL ---
 @st.cache_resource
 def load_data_and_model():
-    # Đã sửa lại tên file mới
     df = pd.read_csv('cleaned_esl_dataset.csv')
     model = joblib.load('esl_model.pkl')
     return df, model
@@ -86,10 +126,9 @@ def load_data_and_model():
 try:
     df, model = load_data_and_model()
 except Exception as e:
-    st.error("⚠️ Lỗi tải dữ liệu. Vui lòng kiểm tra lại file .pkl và .csv!")
+    st.error("⚠️ Không thể tải hệ thống. Vui lòng kiểm tra lại file dữ liệu.")
     st.stop()
 
-# Hàm tạo giọng nói AI
 def text_to_speech(text):
     tts = gTTS(text=text, lang='en', slow=False)
     audio_data = io.BytesIO()
@@ -97,70 +136,61 @@ def text_to_speech(text):
     audio_data.seek(0)
     return audio_data
 
-# --- 5. HIỂN THỊ LỊCH SỬ KHUNG CHAT ---
+# --- 6. HIỂN THỊ LỊCH SỬ CHAT ---
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Hello there! I'm your AI English tutor. I'm ready to listen, what would you like to talk about?"}]
+    st.session_state.messages = [{"role": "assistant", "content": "Welcome to your premium English session. How can I assist your learning today?"}]
 
-# Vùng chứa khung chat
-chat_container = st.container(height=380, border=True)
+chat_container = st.container(height=400, border=False)
 with chat_container:
     for message in st.session_state.messages:
-        avatar_icon = "👤" if message["role"] == "user" else "🤖"
+        # Sử dụng icon sang trọng hơn
+        avatar_icon = "👑" if message["role"] == "user" else "✨"
         with st.chat_message(message["role"], avatar=avatar_icon):
             st.markdown(message["content"])
 
-# --- 6. KHU VỰC THU ÂM (TRỰC TIẾP Ở MÀN HÌNH CHÍNH) ---
-st.markdown("<div class='record-section'>", unsafe_allow_html=True)
-st.markdown("### 🎙️ Đến lượt bạn nói...")
-st.caption("✨ Nhấn vào biểu tượng micro bên dưới, đọc một câu Tiếng Anh, hệ thống sẽ tự động chuyển thành văn bản và phản hồi.")
+# --- 7. KHU VỰC THU ÂM ---
+st.markdown("<div class='record-box'>", unsafe_allow_html=True)
+st.markdown("<h3 style='color: #334155; margin-bottom: 20px;'>🎙️ Chạm để giao tiếp với AI</h3>", unsafe_allow_html=True)
 
 user_message = None
-user_audio = st.audio_input("Nhấn để thu âm", label_visibility="collapsed")
+user_audio = st.audio_input("", label_visibility="collapsed")
 
 if user_audio:
-    with st.spinner("🎧 Đang phân tích giọng nói..."):
+    with st.spinner("✨ Đang phân tích ngữ điệu..."):
         r = sr.Recognizer()
         with sr.AudioFile(user_audio) as source:
             audio_data = r.record(source)
             try:
-                # Nhận diện giọng nói Tiếng Anh
                 recognized_text = r.recognize_google(audio_data, language="en-US")
                 user_message = recognized_text
-                st.success(f"🗣️ **Bạn vừa nói:** *'{recognized_text}'*")
+                st.success(f"**Bạn:** {recognized_text}")
             except sr.UnknownValueError:
-                st.error("⚠️ Xin lỗi, hệ thống nghe không rõ. Bạn hãy thử nói to và rõ chữ hơn nhé!")
+                st.warning("Xin lỗi, âm thanh chưa rõ ràng. Hãy thử lại trong môi trường yên tĩnh hơn.")
             except sr.RequestError:
-                st.error("⚠️ Lỗi kết nối máy chủ giọng nói.")
+                st.error("Lỗi kết nối máy chủ nhận diện giọng nói.")
 st.markdown("</div>", unsafe_allow_html=True)
 
-# --- 7. XỬ LÝ LOGIC AI TRẢ LỜI ---
+# --- 8. XỬ LÝ LOGIC AI TRẢ LỜI ---
 if user_message:
-    # 7.1 Lưu tin nhắn người dùng
     st.session_state.messages.append({"role": "user", "content": user_message})
     
-    # Hiển thị tạm thời tin nhắn người dùng
     with chat_container:
-        with st.chat_message("user", avatar="👤"):
+        with st.chat_message("user", avatar="👑"):
             st.markdown(user_message)
 
-    # 7.2 AI Xử lý và Phản hồi
     with chat_container:
-        with st.chat_message("assistant", avatar="🤖"):
-            with st.spinner("🤖 Đang suy nghĩ..."):
+        with st.chat_message("assistant", avatar="✨"):
+            with st.spinner("Đang phản hồi..."):
                 try:
-                    # Phân tích ý định và tìm câu trả lời
                     predicted_intent = model.predict([user_message])[0]
                     possible_responses = df[df['Intent'] == predicted_intent]['Bot_Response'].tolist()
                     bot_reply = random.choice(possible_responses)
                 except Exception as e:
-                    bot_reply = "I'm sorry, I couldn't understand that perfectly. Could you try saying it again?"
+                    bot_reply = "I beg your pardon, could you elaborate on that?"
             
-            # In câu trả lời ra màn hình
             st.markdown(bot_reply)
             
-            # Đọc câu trả lời bằng giọng nói
             audio_bytes = text_to_speech(bot_reply)
             st.audio(audio_bytes, format='audio/mp3', autoplay=True)
             
-    # Lưu câu trả lời vào bộ nhớ
     st.session_state.messages.append({"role": "assistant", "content": bot_reply})
