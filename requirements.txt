@@ -3,6 +3,4 @@ pandas
 scikit-learn
 joblib
 gTTS
-SpeechRecognition
-fuzzywuzzy
-python-Levenshtein
+openai-whisper
