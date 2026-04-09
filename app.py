@@ -62,12 +62,12 @@ if "last_processed_id" not in st.session_state: st.session_state.last_processed_
 
 st.markdown('<div class="main-card">🌐 <b>AI Tutor:</b> Hello! I am your AI English tutor. How can I practice with you today?</div>', unsafe_allow_html=True)
 
-# --- KHỐI HIỂN THỊ KẾT QUẢ ---
+# --- KHỐI HIỂN THỊ KẾT QUẢ (SỬA LỖI LẶP CHỮ & TIẾNG) ---
 if st.session_state.step == 1:
     user_txt = st.session_state.user_text
     bot_txt = st.session_state.bot_reply
     
-    # 1. Hiển thị bảng Feedback (Luôn hiện)
+    # 1. Hiển thị bảng Feedback (Luôn hiện để người dùng theo dõi)
     intent_pred = nlp_model.predict([user_txt])[0]
     sample_targets = df[df['Intent'] == intent_pred]['User_Input'].tolist()
     target = sample_targets[0] if sample_targets else user_txt
@@ -86,23 +86,27 @@ if st.session_state.step == 1:
     </div>
     """, unsafe_allow_html=True)
     
-    # 2. Hiển thị Robot Chat (Luôn hiện)
-    st.markdown(f'<div class="main-card" style="margin-top: 20px;">🤖 <b>AI:</b> {bot_txt}</div>', unsafe_allow_html=True)
-
-    # 3. 🟢 XỬ LÝ ÂM THANH (Chỉ phát 1 lần duy nhất)
+    # 2. HIỂN THỊ CÂU TRẢ LỜI CỦA ROBOT
+    # Tạo mã ID duy nhất cho lượt trả lời này
     current_msg_id = f"{hash(bot_txt)}_{st.session_state.get('response_time', 0)}"
 
+    # CHỈ HIỂN THỊ VÀ PHÁT THANH NẾU ĐÂY LÀ LƯỢT MỚI
     if st.session_state.last_processed_id != current_msg_id:
-        # Nhúng thẻ audio autoplay bằng HTML (Base64)
+        # Hiện chữ
+        st.markdown(f'<div class="main-card" style="margin-top: 20px;">🤖 <b>AI:</b> {bot_txt}</div>', unsafe_allow_html=True)
+        
+        # Phát âm thanh tự động
         audio_fp = text_to_speech(bot_txt)
         audio_base64 = base64.b64encode(audio_fp.read()).decode()
-        # Dùng container để chứa audio, sau đó đánh dấu đã phát
         st.markdown(f'<audio autoplay="true"><source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3"></audio>', unsafe_allow_html=True)
         
-        # Cập nhật ID để lần rerun tiếp theo không chạy vào đây nữa
+        # KHÓA LẠI: Đánh dấu đã xử lý xong câu này
         st.session_state.last_processed_id = current_msg_id
     else:
-        # Nếu đã phát rồi, chỉ hiện thanh audio tĩnh, KHÔNG autoplay
+        # Nếu trang web rerun, CHỈ hiện chữ, tuyệt đối không chèn thêm mã phát âm thanh
+        st.markdown(f'<div class="main-card" style="margin-top: 20px;">🤖 <b>AI:</b> {bot_txt}</div>', unsafe_allow_html=True)
+        
+        # Hiện thanh audio tĩnh (không tự chạy) để nghe lại nếu cần
         audio_fp = text_to_speech(bot_txt)
         st.audio(audio_fp, format="audio/mp3", autoplay=False)
 
