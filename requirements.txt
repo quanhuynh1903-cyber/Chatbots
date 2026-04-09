@@ -3,5 +3,3 @@ pandas
 scikit-learn
 joblib
 gTTS
-streamlit-mic-recorder
-openai
