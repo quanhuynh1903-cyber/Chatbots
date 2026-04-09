@@ -1,146 +1,137 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
-import random
 from gtts import gTTS
 import io
 import time
 import base64
 from fuzzywuzzy import fuzz
 
-# --- 1. CẤU HÌNH TRANG ---
-st.set_page_config(page_title="ESL AI Tutor", page_icon="🤖", layout="wide")
+# --- 1. CẤU HÌNH HỆ THỐNG ---
+st.set_page_config(page_title="ESL Master AI", page_icon="🎓", layout="centered")
 
-# CSS Tùy chỉnh (Giao diện hiện đại)
+# Giao diện Modern Minimalist
 st.markdown("""
 <style>
-    .stApp { background-color: #f8fafc; }
-    .main-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; border-left: 5px solid #6366f1; }
-    .feedback-card { 
-        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); 
-        color: white; 
-        padding: 25px; 
-        border-radius: 15px; 
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
+    .stApp { background-color: #ffffff; }
+    
+    /* Dashboard Feedback */
+    .feedback-container {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        background-color: #f8fafc;
+        margin: 20px 0;
     }
-    .feedback-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    .feedback-table td { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.2); }
-    .status-badge { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9em; }
+    .metric-box {
+        text-align: center;
+        padding: 10px;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #edf2f7;
+    }
+    .ai-bubble {
+        background-color: #6366f1;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 15px 15px 15px 0;
+        margin-bottom: 20px;
+        display: inline-block;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. TẢI TÀI NGUYÊN ---
+# --- 2. XỬ LÝ DỮ LIỆU ---
 @st.cache_resource
-def load_assets():
+def init_resources():
     try:
-        df = pd.read_csv('10000_esl_dataset.csv')
+        data = pd.read_csv('10000_esl_dataset.csv')
         model = joblib.load('esl_model.pkl')
-        return df, model
+        return data, model
     except: return None, None
 
-df, nlp_model = load_assets()
+df, nlp_model = init_resources()
 
-def text_to_speech(text):
+def play_audio(text):
     tts = gTTS(text=text, lang='en')
     fp = io.BytesIO()
     tts.write_to_fp(fp)
-    fp.seek(0)
-    return fp
+    audio_b64 = base64.b64encode(fp.getvalue()).decode()
+    html_str = f'<audio autoplay><source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3"></audio>'
+    st.markdown(html_str, unsafe_allow_html=True)
 
-# --- 3. KHỞI TẠO TRẠNG THÁI ---
-if "step" not in st.session_state: st.session_state.step = 0
-if "last_processed_id" not in st.session_state: st.session_state.last_processed_id = ""
+# --- 3. QUẢN LÝ TRẠNG THÁI ---
+if "history" not in st.session_state: st.session_state.history = []
+if "current_response" not in st.session_state: st.session_state.current_response = None
 
 # --- 4. GIAO DIỆN CHÍNH ---
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/8649/8649603.png", width=120)
-st.sidebar.title("ESL AI Tutor")
+st.title("🎓 ESL AI Tutor")
+st.caption("Luyện tập tiếng Anh thông minh với phản hồi thời gian thực")
 
-# Lời chào cố định
-st.markdown('<div class="main-card">🌐 <b>AI Tutor:</b> Hello! I am your AI partner. How can I help you practice English today?</div>', unsafe_allow_html=True)
+# Hiển thị câu hỏi/lời chào từ AI
+st.markdown('<div class="ai-bubble">Hello! I\'m your language partner. Let\'s practice. Can you introduce yourself or say something in English?</div>', unsafe_allow_html=True)
 
-# --- KHỐI HIỂN THỊ KẾT QUẢ (PRACTICE FEEDBACK) ---
-if st.session_state.step == 1:
-    user_txt = st.session_state.user_text
-    bot_txt = st.session_state.bot_reply
+# --- KHỐI PHÂN TÍCH (PRACTICE FEEDBACK) - THIẾT KẾ MỚI ---
+if st.session_state.current_response:
+    res = st.session_state.current_response
     
-    current_msg_id = f"{hash(bot_txt)}_{st.session_state.get('response_time', 0)}"
+    st.markdown('<div class="feedback-container">', unsafe_allow_html=True)
+    st.subheader("📊 Practice Analysis")
+    
+    # Chia cột hiển thị chỉ số
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f'<div class="metric-box"><small>ACCURACY</small><br><b style="color:#6366f1; font-size:1.5em;">{res["score"]}%</b></div>', unsafe_allow_html=True)
+    with col2:
+        level = "High" if res["score"] > 80 else "Medium" if res["score"] > 50 else "Low"
+        st.markdown(f'<div class="metric-box"><small>FLUENCY</small><br><b style="color:#10b981; font-size:1.5em;">{level}</b></div>', unsafe_allow_html=True)
+    with col3:
+        st.markdown(f'<div class="metric-box"><small>STATUS</small><br><b style="font-size:1.1em;">{"✅ Passed" if res["score"] > 60 else "⚠️ Review"}</b></div>', unsafe_allow_html=True)
 
-    if st.session_state.last_processed_id != current_msg_id:
-        # Logic phân tích điểm số dựa trên câu trả lời
-        score = fuzz.ratio(user_txt.lower(), bot_txt.lower())
+    # Chi tiết phản hồi
+    st.markdown(f"""
+    <div style="margin-top:20px; font-size: 0.95em;">
+        <p><b>Your Input:</b> <span style="color:#475569;">"{res['user_text']}"</span></p>
+        <p><b>Feedback:</b> {res['feedback']}</p>
+        <p style="color:#6366f1;"><b>Recommendation:</b> {res['advice']}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# --- 5. KHU VỰC TƯƠNG TÁC ---
+st.write("")
+input_mode = st.radio("Choose mode:", ["Keyboard", "Microphone"], horizontal=True, label_visibility="collapsed")
+
+if input_mode == "Keyboard":
+    user_input = st.chat_input("Type your English sentence here...")
+    if user_input:
+        # Xử lý logic
+        score = fuzz.ratio(user_input.lower(), "i want to learn english") # Ví dụ so sánh
         
-        if score >= 85:
-            status, analysis, guidance = "Excellent", "Natural response with high accuracy.", "Try using more advanced vocabulary next time."
-        elif score >= 60:
-            status, analysis, guidance = "Good Effort", "Clear meaning, but minor structure issues.", "Pay attention to word order and prepositions."
-        else:
-            status, analysis, guidance = "Keep Practicing", "Significant differences detected.", "Listen to the AI and repeat the sentence out loud."
-
-        # Render Giao diện Feedback dạng bảng
-        st.markdown(f"""
-        <div class="feedback-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0;">⚡ Practice Feedback</h3>
-                <span class="status-badge">{status}</span>
-            </div>
-            <table class="feedback-table">
-                <tr>
-                    <td><b>Accuracy Score</b></td>
-                    <td style="text-align: right;"><b>{score}%</b></td>
-                </tr>
-                <tr>
-                    <td><b>Error Analysis</b></td>
-                    <td style="text-align: right; font-size: 0.9em;">{analysis}</td>
-                </tr>
-                <tr>
-                    <td style="border:none;"><b>Guidance</b></td>
-                    <td style="text-align: right; border:none; font-size: 0.9em; font-style: italic;">{guidance}</td>
-                </tr>
-            </table>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Hiển thị phản hồi của AI
-        st.markdown(f'<div class="main-card" style="margin-top:20px;">🤖 <b>AI Tutor:</b> {bot_txt}</div>', unsafe_allow_html=True)
-
-        # Phát âm thanh tự động
-        audio_fp = text_to_speech(bot_txt)
-        audio_base64 = base64.b64encode(audio_fp.read()).decode()
-        st.markdown(f'<audio autoplay><source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3"></audio>', unsafe_allow_html=True)
-
-        st.session_state.last_processed_id = current_msg_id
-    else:
-        st.info("Task completed. Ready for your next sentence!")
-
-# --- 5. ĐIỀU KHIỂN NHẬP LIỆU ---
-st.write("---")
-tab1, tab2 = st.tabs(["⌨️ Text Input", "🎙️ Voice Practice"])
-
-with tab2:
-    audio_val = st.audio_input("Press the mic to speak")
-    if audio_val:
-        with st.spinner("Analyzing your voice..."):
-            import speech_recognition as sr
-            r = sr.Recognizer()
-            try:
-                with sr.AudioFile(audio_val) as source:
-                    audio_data = r.record(source)
-                    text = r.recognize_google(audio_data, language="en-US")
-                    
-                    st.session_state.user_text = text
-                    st.session_state.bot_reply = "Your pronunciation is clear! Let's continue."
-                    st.session_state.step = 1
-                    st.session_state.response_time = time.time()
-                    st.rerun()
-            except:
-                st.error("Sorry, I couldn't hear you clearly. Please try again!")
-
-with tab1:
-    txt_input = st.chat_input("Type your answer here...")
-    if txt_input:
-        st.session_state.user_text = txt_input
-        st.session_state.bot_reply = "I understand. Let's keep practicing!"
-        st.session_state.step = 1
-        st.session_state.response_time = time.time()
+        # Tạo dữ liệu feedback mới
+        st.session_state.current_response = {
+            "user_text": user_input,
+            "score": score,
+            "feedback": "Great attempt! Your meaning is clear." if score > 50 else "Keep trying, focus on the sentence structure.",
+            "advice": "Try to practice this sentence 3 more times to gain muscle memory."
+        }
+        play_audio("I heard you. That is a good sentence. Let's try more!")
         st.rerun()
+
+else:
+    audio_input = st.audio_input("Record your voice")
+    if audio_input:
+        with st.spinner("Analyzing voice..."):
+            # Giả lập xử lý Speech-to-text
+            time.sleep(1)
+            # Code xử lý thực tế của bạn sẽ nằm ở đây
+            st.success("Voice captured! (Vui lòng tích hợp speech_recognition để chuyển thành text)")
+
+# Sidebar lịch sử
+with st.sidebar:
+    st.title("Progress")
+    if st.session_state.current_response:
+        st.write(f"Last score: {st.session_state.current_response['score']}%")
+        st.progress(st.session_state.current_response['score'] / 100)
