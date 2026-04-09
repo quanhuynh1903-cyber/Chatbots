@@ -1,129 +1,149 @@
 import streamlit as st
 import pandas as pd
-import joblib
+import numpy as np
 import random
-from gtts import gTTS
-import io
-import whisper # 🟢 Nhập thư viện Whisper mới
-import os
+import time
 
-# --- 1. CẤU HÌNH TRANG WEB ---
-st.set_page_config(page_title="ESL AI Tutor", page_icon="🇬🇧", layout="centered")
+# --- 1. CẤU HÌNH TRANG WEB (Wide Layout) ---
+st.set_page_config(page_title="ESL AI Tutor", page_icon="🤖", layout="wide")
 
+# --- 2. CSS TÙY CHỈNH (Thiết kế UI/UX) ---
 st.markdown("""
-    <style>
-    .main-title { text-align: center; color: #2E86C1; font-family: 'Arial Black', sans-serif; }
-    .sub-title { text-align: center; color: #808B96; font-size: 16px; margin-bottom: 30px; }
-    </style>
+<style>
+    /* Nền ứng dụng */
+    .stApp {
+        background-color: #f4f7f6;
+    }
+    /* Thẻ Feedback Tức thì */
+    .feedback-card {
+        background-color: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+        margin-top: 15px;
+        border-left: 5px solid #4facfe;
+    }
+    /* Đánh dấu màu từ vựng */
+    .word-good {
+        background-color: #d4edda;
+        color: #155724;
+        padding: 2px 6px;
+        border-radius: 5px;
+        font-weight: bold;
+    }
+    .word-bad {
+        background-color: #ffeeba;
+        color: #856404;
+        padding: 2px 6px;
+        border-radius: 5px;
+        font-weight: bold;
+    }
+    /* Chữ Neon */
+    .neon-text {
+        background: -webkit-linear-gradient(#00f2fe, #4facfe);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: bold;
+        text-align: center;
+    }
+    /* Thẻ Gamification Sidebar */
+    .sidebar-card {
+        background-color: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        margin-bottom: 15px;
+    }
+</style>
 """, unsafe_allow_html=True)
 
-# --- 2. THANH SIDEBAR ---
+# --- 3. THANH SIDEBAR (Tiến trình & Khen thưởng) ---
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/4712/4712035.png", width=120)
-    st.markdown("### 🌟 Về Ứng Dụng")
-    st.info("**ESL AI Tutor** nay đã được nâng cấp với 'bộ tai' siêu nhạy Whisper từ OpenAI, giúp nghe hiểu cả những phát âm chưa chuẩn xác nhất!")
-    st.divider()
-    if st.button("🔄 Xóa lịch sử & Bắt đầu lại", use_container_width=True, type="primary"):
-        st.session_state.messages = [{"role": "assistant", "content": "Hello! I am your AI English tutor. How can I help you practice today?"}]
+    # Avatar Robot (Sử dụng Emoji hoặc Icon lớn)
+    st.markdown("<h1 style='text-align: center; font-size: 60px;'>🤖</h1>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #2E86C1;'>ESL AI Tutor</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: gray;'>Trợ lý luyện nói AI siêu nhạy</p>", unsafe_allow_html=True)
+    st.write("---")
+
+    # Thẻ Lộ trình học tập (Progress)
+    st.markdown('<div class="sidebar-card">', unsafe_allow_html=True)
+    st.subheader("📈 Your Speaking Progress")
+    st.write("Thời gian luyện tập tuần này (phút)")
+    
+    # Biểu đồ mô phỏng thời gian học
+    chart_data = pd.DataFrame(np.array([10, 15, 12, 20, 25, 30, 40]), columns=['Minutes'])
+    st.line_chart(chart_data, height=150)
+    
+    st.metric(label="Trình độ hiện tại", value="A2 Intermediate", delta="Tăng 1 bậc")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Thẻ Thành tích (Gamification)
+    st.markdown('<div class="sidebar-card">', unsafe_allow_html=True)
+    st.subheader("🏆 Thành tích của bạn")
+    st.markdown("🔥 **5-Day Streak** (Chuỗi 5 ngày)")
+    st.markdown("🎖️ **Pronunciation Ace** (Phát âm chuẩn)")
+    st.markdown("⭐ **Grammar Master** (Bậc thầy ngữ pháp)")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    if st.button("🔄 Bắt đầu bài tập mới", use_container_width=True):
+        st.session_state.step = 0
         st.rerun()
-# --- 3. TẢI DỮ LIỆU & MODEL CHAT ---
-@st.cache_resource
-def load_data_and_model():
-    df = pd.read_csv('10000_esl_dataset.csv')
-    model = joblib.load('esl_model.pkl')
-    return df, model
 
-try:
-    df, model = load_data_and_model()
-except Exception as e:
-    st.error("Lỗi tải dữ liệu. Vui lòng kiểm tra lại file trên GitHub!")
-    st.stop()
+# --- 4. KHU VỰC CHÍNH (Luyện nói & Phản hồi) ---
+st.title("🎙️ Thực hành Giao tiếp Tiếng Anh")
 
-# --- 4. 🟢 TẢI MODEL WHISPER (Tải 1 lần để web không bị chậm) ---
-@st.cache_resource
-def load_whisper_model():
-    # Sử dụng model "base" (nhỏ gọn, đủ thông minh và phù hợp với RAM của Streamlit)
-    return whisper.load_model("base")
+# Tạo một biến trạng thái để mô phỏng kịch bản (Vì chưa có AI nối vào)
+if "step" not in st.session_state:
+    st.session_state.step = 0
 
-whisper_model = load_whisper_model()
+# Câu hỏi của AI
+with st.chat_message("assistant", avatar="🤖"):
+    st.write("Hello! I am your AI English tutor. **Can you recommend a good restaurant?**")
 
-# Hàm tạo giọng nói AI (Text-to-Speech)
-def text_to_speech(text):
-    tts = gTTS(text=text, lang='en', slow=False)
-    audio_data = io.BytesIO()
-    tts.write_to_fp(audio_data)
-    audio_data.seek(0)
-    return audio_data
+# Nếu người dùng đã thu âm (chuyển sang bước 1)
+if st.session_state.step == 1:
+    with st.chat_message("user", avatar="🧑‍🎓"):
+        st.write("Bạn đã trả lời (Thông qua Whisper):")
+        
+        # Thẻ Instant Practice Feedback
+        st.markdown(f"""
+        <div class="feedback-card">
+            <h4 style="color: #2E86C1;">⚡ Instant Practice Feedback</h4>
+            <hr style="margin: 10px 0;">
+            <p><strong>Câu nói của bạn:</strong></p>
+            <p style="font-size: 18px;">
+                I <span class="word-bad">tink</span> you should <span class="word-good">try</span> the seafood restaurant near the <span class="word-good">beach</span>.
+            </p>
+            <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                <div>
+                    <p>🎯 <strong>Pronunciation Score:</strong> 88%</p>
+                    <p>📝 <strong>Grammar Check:</strong> <span style="color: green;">Correct</span></p>
+                </div>
+                <div>
+                    <p>🗣️ <strong>Fluency:</strong> ⭐⭐⭐⭐</p>
+                    <p>🔍 <strong>Gợi ý sửa lỗi:</strong> 'tink' -> 'think'</p>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    # Lời khen của AI sau khi feedback
+    with st.chat_message("assistant", avatar="🤖"):
+        st.write("Good job! Your fluency is great. Just be careful with the 'th' sound in the word **'think'**. Let's try another question!")
 
-# --- 5. HIỂN THỊ LỊCH SỬ CHAT ---
-if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Hello! I am your AI English tutor. How can I help you practice today?"}]
+st.write("---")
 
-chat_container = st.container(height=450, border=True)
-with chat_container:
-    for message in st.session_state.messages:
-        avatar_icon = "🧑‍💻" if message["role"] == "user" else "🤖"
-        with st.chat_message(message["role"], avatar=avatar_icon):
-            st.markdown(message["content"])
+# --- 5. KHU VỰC THU ÂM (Mô phỏng sóng âm) ---
+st.markdown("<h3 class='neon-text'>🎙️ Nhấn vào Micro để nói</h3>", unsafe_allow_html=True)
+st.caption("<p style='text-align:center;'>AI Whisper sẽ phân tích giọng nói của bạn ngay lập tức!</p>", unsafe_allow_html=True)
 
-st.write("") 
-
-# --- 6. KHU VỰC NHẬP LIỆU (TABS) ---
-tab1, tab2 = st.tabs(["⌨️ Luyện Viết (Văn bản)", "🎙️ Luyện Nói (Giọng nói)"])
-user_message = None
-
-# TAB 1: GIAO DIỆN GÕ VĂN BẢN
-with tab1:
-    with st.form("text_form", clear_on_submit=True):
-        col_input, col_btn = st.columns([5, 1])
-        with col_input:
-            user_text = st.text_input("Gõ tin nhắn Tiếng Anh...", label_visibility="collapsed")
-        with col_btn:
-            submit_text = st.form_submit_button("Gửi 🚀", use_container_width=True)
-        if submit_text and user_text.strip() != "":
-            user_message = user_text
-
-# TAB 2: 🟢 GIAO DIỆN THU ÂM (SỬ DỤNG WHISPER)
-with tab2:
-    st.info("💡 Nhấn vào micro, đọc một câu Tiếng Anh. AI Whisper siêu nhạy sẽ dịch giọng nói của bạn!")
-    user_audio = st.audio_input("Nhấn để thu âm", label_visibility="collapsed")
+# Khung chứa Audio Input ở giữa màn hình
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    user_audio = st.audio_input("Thu âm", label_visibility="collapsed")
     
     if user_audio:
-        with st.spinner("🎧 Whisper đang phân tích giọng nói của bạn..."):
-            # Lưu file âm thanh do trình duyệt thu được thành 1 file tạm thời trên máy chủ
-            temp_audio_path = "temp_user_audio.wav"
-            with open(temp_audio_path, "wb") as f:
-                f.write(user_audio.read())
-            
-            try:
-                # Nhờ Whisper nghe và chuyển thành chữ (chỉ định nghe tiếng Anh)
-                result = whisper_model.transcribe(temp_audio_path, language="en")
-                user_message = result["text"]
-            except Exception as e:
-                st.error(f"⚠️ Có lỗi xảy ra khi phân tích giọng nói: {e}")
-            finally:
-                # Dọn dẹp: Xóa file tạm sau khi nghe xong để nhẹ máy chủ
-                if os.path.exists(temp_audio_path):
-                    os.remove(temp_audio_path)
-
-# --- 7. XỬ LÝ LOGIC AI TRẢ LỜI ---
-if user_message:
-    st.session_state.messages.append({"role": "user", "content": user_message})
-    
-    with chat_container:
-        with st.chat_message("user", avatar="🧑‍💻"):
-            st.markdown(user_message)
-
-    with chat_container:
-        with st.chat_message("assistant", avatar="🤖"):
-            with st.spinner("🤖 AI đang suy nghĩ..."):
-                predicted_intent = model.predict([user_message])[0]
-                possible_responses = df[df['Intent'] == predicted_intent]['Bot_Response'].tolist()
-                bot_reply = random.choice(possible_responses)
-            
-            st.markdown(bot_reply)
-            
-            audio_bytes = text_to_speech(bot_reply)
-            st.audio(audio_bytes, format='audio/mp3', autoplay=True)
-            
-    st.session_state.messages.append({"role": "assistant", "content": bot_reply})
+        with st.spinner("🎧 Đang phân tích phát âm..."):
+            time.sleep(2) # Giả lập thời gian AI xử lý
+            st.session_state.step = 1
+            st.rerun()
