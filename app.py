@@ -8,12 +8,12 @@ import google.generativeai as genai
 # --- 1. CẤU HÌNH TRANG WEB & API ---
 st.set_page_config(page_title="ESL Tutor Pro", page_icon="🎙️", layout="centered")
 
-# 🔴 QUAN TRỌNG: DÁN API KEY CỦA BẠN VÀO ĐÂY
+# Đã dán mã API Key của bạn
 API_KEY = "AIzaSyCHTfFiNkF1tCWIY3qpNB3K1mudcFh8qlw" 
 
-if API_KEY != "AIzaSyCHTfFiNkF1tCWIY3qpNB3K1mudcFh8qlw":
+# Khởi tạo trực tiếp Gemini (đã bỏ lệnh if gây lỗi)
+try:
     genai.configure(api_key=API_KEY)
-    # Cấu hình "Nhân cách" cho AI Tutor
     system_instruction = """
     You are 'ESL Elite', a friendly, native English tutor. Your goal is to help the user practice speaking.
     1. Respond naturally and enthusiastically.
@@ -25,8 +25,9 @@ if API_KEY != "AIzaSyCHTfFiNkF1tCWIY3qpNB3K1mudcFh8qlw":
         model_name='gemini-1.5-flash',
         system_instruction=system_instruction
     )
-else:
+except Exception as e:
     model = None
+    st.error(f"Lỗi khởi tạo API: {e}")
 
 # --- 2. CSS TÙY CHỈNH (Giữ nguyên giao diện hiện đại) ---
 st.markdown("""
@@ -64,9 +65,7 @@ with st.sidebar:
 st.markdown("<h1 class='main-title'>ESL AI TUTOR</h1>", unsafe_allow_html=True)
 st.markdown("<div class='main-subtitle'>Smart Generative AI Partner</div>", unsafe_allow_html=True)
 
-# Cảnh báo nếu chưa nhập API KEY
 if model is None:
-    st.error("⚠️ Bạn chưa nhập API KEY. Hãy sửa biến `API_KEY` trong file `app.py` để AI hoạt động nhé!")
     st.stop()
 
 # Hàm tạo giọng nói
@@ -78,11 +77,9 @@ def text_to_speech(text):
     return audio_data
 
 # --- 5. KHUNG CHAT & LỊCH SỬ LLM ---
-# Khởi tạo bộ nhớ hội thoại cho Streamlit
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "Hello! I'm your AI English tutor. How is your day going?"}]
 
-# Khởi tạo bộ nhớ hội thoại cho LLM (Để AI nhớ ngữ cảnh đang nói gì)
 if "chat_session" not in st.session_state:
     st.session_state.chat_session = model.start_chat(history=[])
 
@@ -115,17 +112,14 @@ st.markdown("</div>", unsafe_allow_html=True)
 
 # --- 7. LOGIC PHẢN HỒI BẰNG LLM ---
 if user_message:
-    # 7.1 Ghi nhận câu của user
     st.session_state.messages.append({"role": "user", "content": user_message})
     with chat_container:
         with st.chat_message("user", avatar="👤"): st.markdown(user_message)
 
-    # 7.2 Gửi cho LLM và nhận phản hồi
     with chat_container:
         with st.chat_message("assistant", avatar="🤖"):
             with st.spinner("AI đang suy nghĩ..."):
                 try:
-                    # Gửi tin nhắn vào session chat của LLM để duy trì ngữ cảnh
                     response = st.session_state.chat_session.send_message(user_message)
                     bot_reply = response.text
                 except Exception as e:
