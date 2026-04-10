@@ -8,189 +8,194 @@ import speech_recognition as sr
 
 # --- 1. CẤU HÌNH TRANG WEB ---
 st.set_page_config(
-    page_title="Premium ESL Tutor", 
-    page_icon="✨", 
-    layout="centered",
-    initial_sidebar_state="expanded"
+    page_title="ESL Tutor Pro", 
+    page_icon="🎙️", 
+    layout="centered"
 )
 
-# --- 2. CSS TÙY CHỈNH (GIAO DIỆN SANG TRỌNG) ---
+# --- 2. CSS TÙY CHỈNH (PHONG CÁCH SOFT LIGHT) ---
 st.markdown("""
     <style>
-        /* Import Font chữ hiện đại, sang trọng */
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
         
         html, body, [class*="css"] {
-            font-family: 'Outfit', sans-serif !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
         }
 
-        /* Nền trang web: Hiệu ứng Gradient thanh lịch */
+        /* Nền trắng xanh dịu nhẹ */
         .stApp {
-            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            background-color: #f8fafc;
         }
 
-        /* Tiêu đề chính */
-        .premium-title {
+        /* Tiêu đề chính: Xanh dương đậm & mạnh mẽ */
+        .main-title {
             text-align: center;
-            background: linear-gradient(to right, #bda376, #dfc28d, #bda376); /* Màu Vàng Gold sang trọng */
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #1e293b;
             font-weight: 800;
-            font-size: 3.5rem;
-            margin-bottom: 0px;
+            font-size: 3rem;
+            margin-bottom: 5px;
             letter-spacing: -1px;
-            padding-top: 20px;
         }
 
-        /* Phụ đề */
-        .premium-subtitle {
+        .main-subtitle {
             text-align: center;
             color: #64748b;
-            font-size: 1.1rem;
-            font-weight: 400;
-            margin-bottom: 40px;
-            letter-spacing: 2px;
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 30px;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        /* Khu vực Chat (Glassmorphism) */
+        /* Khung Chat: Trắng thuần khiết, đổ bóng mềm */
         .stChatMessage {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
+            background-color: #ffffff !important;
+            border-radius: 16px !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+            margin-bottom: 15px !important;
+        }
+
+        /* Card Thu âm: Nổi bật và sạch sẽ */
+        .record-card {
+            background: #ffffff;
             border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-
-        /* Khu vực thu âm */
-        .record-box {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 24px;
             padding: 25px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
             text-align: center;
-            margin-top: 30px;
+            margin-top: 20px;
         }
 
-        /* Tùy chỉnh Sidebar */
+        /* --- TÙY CHỈNH SIDEBAR MỚI (DỄ NHÌN HƠN) --- */
         [data-testid="stSidebar"] {
-            background-color: rgba(15, 23, 42, 0.98) !important; /* Xanh đen sang trọng */
-            color: #f8fafc;
-        }
-        [data-testid="stSidebar"] * {
-            color: #f8fafc !important;
+            background-color: #ffffff !important;
+            border-right: 1px solid #e2e8f0 !important;
         }
         
-        /* Chỉnh lại viền của Audio Input */
+        .sidebar-logo-text { color: #2563eb; font-weight: 800; font-size: 1.5rem; text-align: center; margin-bottom: 20px; }
+        .sidebar-section-title { color: #1e293b; font-weight: 600; font-size: 1rem; margin-top: 20px; margin-bottom: 8px; }
+        .sidebar-info-text { color: #475569; font-size: 0.9rem; line-height: 1.5; }
+        .sidebar-icon { color: #2563eb; margin-right: 8px; }
+        
+        /* Nút bấm Sidebar: Xanh dương chuyên nghiệp */
+        [data-testid="stSidebar"] button {
+            background-color: #2563eb !important;
+            color: white !important;
+            border-radius: 10px !important;
+            border: none !important;
+            transition: all 0.2s ease !important;
+        }
+        [data-testid="stSidebar"] button:hover {
+            background-color: #1d4ed8 !important;
+            transform: translateY(-1px);
+        }
+
+        /* Tùy chỉnh Audio Input */
         div[data-testid="stAudioInput"] {
-            border-radius: 50px;
-            overflow: hidden;
-            border: 2px solid #dfc28d;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
         }
     </style>
 """, unsafe_allow_html=True)
 
 # --- 3. THANH SIDEBAR ---
 with st.sidebar:
-    # Có thể đổi link ảnh này thành Logo của bạn
-    st.image("https://cdn-icons-png.flaticon.com/512/2083/2083204.png", width=120)
-    st.markdown("<h2 style='color: #dfc28d !important;'>ESL ELITE</h2>", unsafe_allow_html=True)
-    st.markdown("---")
+    st.markdown("""
+        <div style='text-align: center; margin-top: 10px;'>
+            <img src='https://cdn-icons-png.flaticon.com/512/3242/3242257.png' width='60' style='margin-bottom: 10px;'>
+        </div>
+        <div class='sidebar-logo-text'>ESL TUTOR PRO</div>
+    """, unsafe_allow_html=True)
     
-    st.markdown("### ✨ Về Ứng Dụng")
-    st.write("Trợ lý luyện giọng chuẩn bản xứ với công nghệ AI phân tích thời gian thực.")
+    st.markdown("<div class='sidebar-section-title'>📘 Giới thiệu</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-info-text'>Ứng dụng hỗ trợ luyện nói Tiếng Anh với phản hồi tức thì từ AI.</div>", unsafe_allow_html=True)
     
-    st.markdown("### 🎯 Mục Tiêu")
-    st.write("✔ Luyện phản xạ nhanh \n\n✔ Chuẩn hóa phát âm \n\n✔ Mở rộng từ vựng")
+    st.markdown("<div class='sidebar-section-title'>🚀 Mục tiêu</div>", unsafe_allow_html=True)
+    st.markdown("""
+        <div class='sidebar-info-text'>
+            <p><span class='sidebar-icon'>●</span> Phản xạ tự nhiên</p>
+            <p><span class='sidebar-icon'>●</span> Phát âm chuẩn xác</p>
+            <p><span class='sidebar-icon'>●</span> Tự tin giao tiếp</p>
+        </div>
+    """, unsafe_allow_html=True)
     
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    
-    if st.button("🔄 Bắt đầu phiên mới", use_container_width=True):
-        st.session_state.messages = [{"role": "assistant", "content": "Welcome to your premium English session. How can I assist your learning today?"}]
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("🔄 Làm mới cuộc hội thoại", use_container_width=True):
+        st.session_state.messages = [{"role": "assistant", "content": "Hello! I'm ready for our new session. What shall we talk about?"}]
         st.rerun()
 
-# --- 4. GIAO DIỆN CHÍNH (HEADER) ---
-st.markdown("<h1 class='premium-title'>ESL AI TUTOR</h1>", unsafe_allow_html=True)
-st.markdown("<div class='premium-subtitle'>Exclusive Speaking Partner</div>", unsafe_allow_html=True)
+# --- 4. GIAO DIỆN CHÍNH ---
+st.markdown("<h1 class='main-title'>ESL AI TUTOR</h1>", unsafe_allow_html=True)
+st.markdown("<div class='main-subtitle'>Your Smart Language Partner</div>", unsafe_allow_html=True)
 
-# --- 5. TẢI DỮ LIỆU & MODEL ---
+# --- 5. TẢI DỮ LIỆU ---
 @st.cache_resource
-def load_data_and_model():
+def load_assets():
     df = pd.read_csv('cleaned_esl_dataset.csv')
     model = joblib.load('esl_model.pkl')
     return df, model
 
 try:
-    df, model = load_data_and_model()
-except Exception as e:
-    st.error("⚠️ Không thể tải hệ thống. Vui lòng kiểm tra lại file dữ liệu.")
+    df, model = load_assets()
+except:
+    st.error("⚠️ Vui lòng kiểm tra file dữ liệu.")
     st.stop()
 
 def text_to_speech(text):
-    tts = gTTS(text=text, lang='en', slow=False)
+    tts = gTTS(text=text, lang='en')
     audio_data = io.BytesIO()
     tts.write_to_fp(audio_data)
     audio_data.seek(0)
     return audio_data
 
-# --- 6. HIỂN THỊ LỊCH SỬ CHAT ---
+# --- 6. KHUNG CHAT ---
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Welcome to your premium English session. How can I assist your learning today?"}]
+    st.session_state.messages = [{"role": "assistant", "content": "Hello! I'm your English partner. How can I help you today?"}]
 
-chat_container = st.container(height=400, border=False)
+chat_container = st.container(height=350, border=False)
 with chat_container:
     for message in st.session_state.messages:
-        # Sử dụng icon sang trọng hơn
-        avatar_icon = "👑" if message["role"] == "user" else "✨"
-        with st.chat_message(message["role"], avatar=avatar_icon):
+        avatar = "👤" if message["role"] == "user" else "🤖"
+        with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
 
 # --- 7. KHU VỰC THU ÂM ---
-st.markdown("<div class='record-box'>", unsafe_allow_html=True)
-st.markdown("<h3 style='color: #334155; margin-bottom: 20px;'>🎙️ Chạm để giao tiếp với AI</h3>", unsafe_allow_html=True)
+st.markdown("<div class='record-card'>", unsafe_allow_html=True)
+st.markdown("<h3 style='color: #1e293b; margin-bottom: 15px;'>🎙️ Chạm để bắt đầu nói</h3>", unsafe_allow_html=True)
 
 user_message = None
 user_audio = st.audio_input("", label_visibility="collapsed")
 
 if user_audio:
-    with st.spinner("✨ Đang phân tích ngữ điệu..."):
+    with st.spinner("Đang phân tích..."):
         r = sr.Recognizer()
         with sr.AudioFile(user_audio) as source:
             audio_data = r.record(source)
             try:
                 recognized_text = r.recognize_google(audio_data, language="en-US")
                 user_message = recognized_text
-                st.success(f"**Bạn:** {recognized_text}")
-            except sr.UnknownValueError:
-                st.warning("Xin lỗi, âm thanh chưa rõ ràng. Hãy thử lại trong môi trường yên tĩnh hơn.")
-            except sr.RequestError:
-                st.error("Lỗi kết nối máy chủ nhận diện giọng nói.")
+                st.success(f"**Bạn đã nói:** {recognized_text}")
+            except:
+                st.warning("Tôi chưa nghe rõ, bạn nói lại nhé?")
 st.markdown("</div>", unsafe_allow_html=True)
 
-# --- 8. XỬ LÝ LOGIC AI TRẢ LỜI ---
+# --- 8. LOGIC PHẢN HỒI ---
 if user_message:
     st.session_state.messages.append({"role": "user", "content": user_message})
-    
     with chat_container:
-        with st.chat_message("user", avatar="👑"):
-            st.markdown(user_message)
+        with st.chat_message("user", avatar="👤"): st.markdown(user_message)
 
     with chat_container:
-        with st.chat_message("assistant", avatar="✨"):
-            with st.spinner("Đang phản hồi..."):
-                try:
-                    predicted_intent = model.predict([user_message])[0]
-                    possible_responses = df[df['Intent'] == predicted_intent]['Bot_Response'].tolist()
-                    bot_reply = random.choice(possible_responses)
-                except Exception as e:
-                    bot_reply = "I beg your pardon, could you elaborate on that?"
+        with st.chat_message("assistant", avatar="🤖"):
+            try:
+                predicted_intent = model.predict([user_message])[0]
+                possible_responses = df[df['Intent'] == predicted_intent]['Bot_Response'].tolist()
+                bot_reply = random.choice(possible_responses)
+            except:
+                bot_reply = "Interesting! Tell me more about that."
             
             st.markdown(bot_reply)
-            
-            audio_bytes = text_to_speech(bot_reply)
-            st.audio(audio_bytes, format='audio/mp3', autoplay=True)
+            st.audio(text_to_speech(bot_reply), format='audio/mp3', autoplay=True)
             
     st.session_state.messages.append({"role": "assistant", "content": bot_reply})
