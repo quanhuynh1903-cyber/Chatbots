@@ -1,6 +1,5 @@
 streamlit
-pandas
-joblib
 gTTS
 SpeechRecognition
 scikit-learn
+google-generativeai
