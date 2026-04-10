@@ -9,9 +9,9 @@ import google.generativeai as genai
 st.set_page_config(page_title="ESL Tutor Pro", page_icon="🎙️", layout="centered")
 
 # 🔴 QUAN TRỌNG: DÁN API KEY CỦA BẠN VÀO ĐÂY
-API_KEY = "YOUR_API_KEY_HERE" 
+API_KEY = "AIzaSyCHTfFiNkF1tCWIY3qpNB3K1mudcFh8qlw" 
 
-if API_KEY != "YOUR_API_KEY_HERE":
+if API_KEY != "AIzaSyCHTfFiNkF1tCWIY3qpNB3K1mudcFh8qlw":
     genai.configure(api_key=API_KEY)
     # Cấu hình "Nhân cách" cho AI Tutor
     system_instruction = """
